@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cy.pj.sys.dao.SysUserDao">
+
+
+  <update id="updateObject">
+    update sys_users
+    set
+       username=#{username},
+       deptId=#{deptId},
+       email=#{email},
+       mobile=#{mobile},
+       modifiedTime=now(),
+       modifiedUser=#{modifiedUser}
+    where id=#{id}
+  </update>
+
+  <!-- 通过嵌套查询获取用户信息以及用户对应的部门信息 -->
+  <select id="findObjectById" resultMap="sysUserDeptVo">
+      select *
+      from sys_users
+      where id=#{id}
+  </select>
+  
+
+  <insert id="insertObject"
+          parameterType="com.cy.pj.sys.entity.SysUser"
+          useGeneratedKeys="true"
+          keyProperty="id">
+	insert into sys_users
+	(username,password,deptId,email,mobile,salt,valid,
+	createdTime,modifiedTime,createdUser,modifiedUser)
+	values
+	(#{username},#{password},#{deptId},#{email},#{mobile},#{salt},#{valid},
+	now(),now(),#{createdUser},#{modifiedUser})
+ </insert>
+
+   <!-- sql元素用于定义mybatis中的sql共性，其它元素用到了，可以实用include进行引入 -->
+   <sql id="queryWhereId">
+      from sys_users
+      <where>
+         <if test="username!=null and username!=''">
+           username like concat("%",#{username},"%")
+         </if>
+      </where>
+   </sql>
+   <resultMap id="sysUserDeptVo" type="com.cy.pj.sys.vo.SysUserDeptVo">
+      <!-- 
+      <id property="id" column="id"/>
+      <result property="username" column="username"/>
+      ...
+       -->
+      <!-- association应用在多表或嵌套查询中用于实现many2one或one2one映射 -->
+      <association property="sysDept" 
+                   column="deptId"
+                   select="com.cy.pj.sys.dao.SysDeptDao.findById">
+                    <!-- 
+                     <id property="id" column="id"/>
+                     <result property="name" column="name"/>
+                     ....
+                    -->
+      </association>
+   </resultMap>
+   <!-- 查询当前页要呈现的记录 -->
+   <select id="findPageObjects" resultMap="sysUserDeptVo">
+      select *
+      <include refid="queryWhereId"/>
+      order by createdTime desc
+   </select>
+   <!-- 系统底层会将解析获取的SQL信息封装到一个MappedStatement中 -->
+   
+   
+</mapper>

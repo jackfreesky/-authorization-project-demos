@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cy.pj.sys.dao.SysMenuDao">
+   <!-- 假如应用mybatis二级缓存可以添加cache元素 -->
+   <cache eviction="FIFO" size="512" flushInterval="60000" readOnly="false"/>
+   <resultMap type="com.cy.pj.sys.vo.SysUserMenuVo" 
+              id="sysUserMenuVo">
+         <!-- 一级菜单映射 -->
+         <id property="id" column="id"/>
+         <result property="name" column="name"/>
+         <result property="url" column="url"/>
+         <!-- 二级菜单映射 -->
+         <collection property="childs" ofType="com.cy.pj.sys.vo.SysUserMenuVo">
+            <id property="id" column="cid"/>
+            <result property="name" column="cname"/>
+            <result property="url" column="curl"/>
+         </collection>
+   </resultMap>
+   <select id="findMenusByIds" resultMap="sysUserMenuVo">
+        select p.id,p.name,p.url,c.id cid,c.name cname,c.url curl
+        from  sys_menus p  join   sys_menus c
+        on  c.parentId=p.id
+        <where>
+           <foreach collection="menuIds" open="(" close=")" 
+                    separator=" or " item="menuId">
+                c.id=#{menuId}
+           </foreach>
+           and  p.parentId is null 
+        </where> 
+   </select>
+
+   <!-- 基于多个菜单id找到对应的授权标识 -->
+   <!-- 
+    <select id="findPermissions" resultType="string">
+        select permission
+        from sys_menus
+        <where>
+           <foreach collection="list" separator=" or " item="menuId">
+              id=#{menuId}
+           </foreach>
+        </where>
+    </select>
+   -->
+   <!-- 基于多表管理获取用户对应的权限菜单信息 -->
+    <select id="findPermissions" resultType="string">
+        select distinct m.permission
+        from sys_user_roles ur join sys_role_menus rm join sys_menus m
+        on ur.role_id=rm.role_id and rm.menu_id=m.id
+        where ur.user_id=#{userId}
+    </select>
+   
+
+    <update id="updateObject">
+       update sys_menus
+       set
+           name=#{name},
+           type=#{type},
+           sort=#{sort},
+           url=#{url},
+           parentId=#{parentId},
+           permission=#{permission},
+           modifiedUser=#{modifiedUser},
+           modifiedTime=now()
+        where id=#{id}
+    </update>
+
+	<insert id="insertObject">
+		insert into sys_menus
+		(name,url,type,sort,note,parentId,permission,
+		createdTime,modifiedTime,createdUser,modifiedUser)
+		values
+		(#{name},#{url},#{type},#{sort},#{note},#{parentId},
+		#{permission},now(),now(),#{createdUser},#{modifiedUser})
+	</insert>
+
+    <select id="findObjects" resultType="map">
+       <!-- 方案1
+       select c.*,p.name parentName
+       from sys_menus c left join sys_menus p
+       on c.parentId=p.id  
+       --> 
+       <!-- 方案2 -->
+       select c.*,(select name
+                   from sys_menus p
+                   where c.parentId=p.id) parentName
+       from sys_menus c
+    </select>
+   
+</mapper>

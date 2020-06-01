@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cy.pj.sys.dao.SysRoleMenuDao">
+
+   <!-- 基于多个角色id获取对应的菜单id -->
+   <select id="findMenuIdsByRoleIds" resultType="int">
+        select menu_id
+        from sys_role_menus
+        <where>
+          <foreach collection="list" separator=" or " item="roleId">
+              role_id=#{roleId}
+          </foreach>
+        </where>
+   </select>
+
+    <!-- 基于角色id获取菜单resultType定义一行记录要映射的结果类型 -->
+    <select id="findMenuIdsByRoleId" 
+            resultType="int">
+        select menu_id
+        from sys_role_menus
+        where role_id=#{roleId}
+    </select>
+    <!-- 写入角色和菜单的关系数据 -->
+    <insert id="insertObjects">
+       insert into sys_role_menus
+       (role_id,menu_id)
+       values <!-- (1,2),(1,3),(1,4) -->
+       <foreach collection="menuIds"
+                separator=","
+                item="menuId">
+                (#{roleId},#{menuId})
+       </foreach>
+    </insert>
+</mapper>
